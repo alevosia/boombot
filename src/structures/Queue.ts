@@ -110,9 +110,13 @@ export class Queue {
         } catch (error) {
             console.error(error)
 
-            return this.guildChannel.send(
-                `Failed to play \`${this.songs[0].title}\`.`
+            await this.guildChannel.send(
+                `Failed to play \`${currentSong.title}\`.`
             )
+
+            const response = this.skip()
+            console.log(response)
+            return this.guildChannel.send(response)
         }
     }
 
