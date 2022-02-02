@@ -29,21 +29,22 @@ export class Queue {
     }
 
     private attachAudioPlayerListeners() {
-        this.player.on(AudioPlayerStatus.Idle, () => {
-            if (this.songs.length > 0) {
-                console.log('Song ended, playing next..')
+        this.player.on(AudioPlayerStatus.Idle, (oldState, newState) => {
+            console.log(
+                `Audio Player is ${newState.status}. Previous state was ${oldState.status}.`
+            )
 
+            if (this.songs.length > 0) {
+                console.log(
+                    'There is still a song left in queue. Shifting and playing next song.'
+                )
                 this.songs.shift()
                 this.play()
             }
         })
 
-        this.player.on(AudioPlayerStatus.Playing, () => {
-            console.log(`Now playing ${this.songs[0].title}`)
-        })
-
         this.player.on(AudioPlayerStatus.Paused, () => {
-            console.log(`Paused ${this.songs[0].title}`)
+            console.log(`Paused ${this.songs[0]?.title}`)
         })
 
         this.player.on(AudioPlayerStatus.AutoPaused, () => {
@@ -68,6 +69,7 @@ export class Queue {
                 console.log(
                     `Disconnected: Voice Connection is ${this.connection?.state.status}. Queue has been cleared.`
                 )
+                this.player.stop(true)
                 this.connection = null
             })
 
@@ -76,6 +78,7 @@ export class Queue {
                 console.log(
                     `Destroyed: Voice Connection is ${this.connection?.state.status}. Queue has been cleared.`
                 )
+                this.player.stop(true)
                 this.connection = null
             })
         }
@@ -83,7 +86,7 @@ export class Queue {
 
     private async play() {
         if (this.songs.length === 0) {
-            this.player.stop()
+            this.player.stop(true)
             return this.guildChannel.send(`No more songs in the queue.`)
         }
 
@@ -91,17 +94,22 @@ export class Queue {
             this.setupVoiceConnection()
         }
 
+        const currentSong = this.songs[0]
+
         try {
-            const stream = await ytdl(this.songs[0].id, {
+            const stream = await ytdl(currentSong.id, {
                 filter: 'audioonly',
             })
+
             const resource = createAudioResource(stream)
             this.player.play(resource)
-            return this.guildChannel.send(
-                `Now playing \`${this.songs[0].title}\`.`
-            )
+
+            const response = `Now playing \`${currentSong.title}\`.`
+            console.log(response)
+            return this.guildChannel.send(response)
         } catch (error) {
             console.error(error)
+
             return this.guildChannel.send(
                 `Failed to play \`${this.songs[0].title}\`.`
             )
@@ -114,7 +122,9 @@ export class Queue {
         if (this.songs.length === 1) {
             this.play()
         } else {
-            return `Added \`${song.title}\` to the queue.`
+            const response = `Added \`${song.title}\` to the queue.`
+            console.log(response)
+            return response
         }
     }
 
@@ -130,6 +140,6 @@ export class Queue {
     }
 
     public clear() {
-        this.songs = []
+        this.songs.splice(0, this.songs.length)
     }
 }

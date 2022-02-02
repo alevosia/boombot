@@ -57,7 +57,7 @@ export class PlayCommand extends Command {
             )
         }
 
-        await interaction.reply(`Searching for \`${searchTitle}\`.`)
+        await interaction.reply(`Searching for \`${searchTitle}\`...`)
 
         joinVoiceChannel({
             channelId: member.voice.channel.id,
@@ -83,8 +83,9 @@ export class PlayCommand extends Command {
 
             const response = await queue.addSong(
                 new Song(
-                    video.id,
+                    video.id.videoId,
                     video.title,
+                    video.url,
                     interaction.member.user.username
                 )
             )
