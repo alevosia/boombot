@@ -97,7 +97,7 @@ export class Queue {
         const currentSong = this.songs[0]
 
         try {
-            const stream = await ytdl(currentSong.id, {
+            const stream = await ytdl(currentSong.url, {
                 filter: 'audioonly',
             })
 
