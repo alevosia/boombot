@@ -9,7 +9,7 @@
         "watch-ts": "tsc --watch",
         "nodemon-js": "nodemon build/index.js",
         "build": "tsc",
-        "start": "env NODE_ENV=production node build/index.js",
+        "start": "node build/index.js",
         "prepare": "husky install",
         "prebuild": "npm run lint",
         "check-types": "tsc --noEmit",
