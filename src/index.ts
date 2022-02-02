@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv'
-import { SapphireClient } from '@sapphire/framework'
 import { generateDependencyReport } from '@discordjs/voice'
+import { CypherClient } from './structures/CypherClient'
 
 console.log(generateDependencyReport())
 
@@ -14,8 +14,6 @@ if (!BOT_TOKEN) {
     throw new Error('Environment variable BOT_TOKEN is missing.')
 }
 
-const client = new SapphireClient({
-    intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_VOICE_STATES'],
-})
+const client = new CypherClient()
 
 client.login(BOT_TOKEN)

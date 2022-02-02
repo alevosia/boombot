@@ -1,15 +1,13 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import type { CommandInteraction } from 'discord.js'
-import { getVoiceConnection } from '@discordjs/voice'
 
-export class DisconnectCommand extends Command {
+export class SkipCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
-            name: 'disconnect',
-            aliases: ['dc'],
-            description: 'Disconnects the bot from the voice channel',
+            name: 'skip',
+            description: 'Skips the current song',
         })
     }
 
@@ -24,10 +22,11 @@ export class DisconnectCommand extends Command {
 
         registry.registerChatInputCommand(builder, {
             guildIds,
+            idHints: ['938436872919711744'],
         })
     }
 
-    public chatInputRun(interaction: CommandInteraction) {
+    public async chatInputRun(interaction: CommandInteraction) {
         if (!interaction.guild || !interaction.member) return
 
         const member = interaction.guild.members.cache.get(
@@ -40,16 +39,16 @@ export class DisconnectCommand extends Command {
             )
         }
 
-        const connection = getVoiceConnection(interaction.guild.id)
+        const queue = this.container.jukebox.queues.get(interaction.guild.id)
 
-        if (!connection) {
+        if (!queue) {
             return interaction.reply(
-                'I am not connected to a voice channel in this server.'
+                'There is no music playing in this server.'
             )
         }
 
-        connection.destroy()
+        const response = await queue.skip()
 
-        return interaction.reply(`Disconnected`)
+        return interaction.reply(response)
     }
 }

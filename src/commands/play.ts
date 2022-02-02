@@ -1,12 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import { CommandInteraction } from 'discord.js'
-import {
-    createAudioPlayer,
-    createAudioResource,
-    joinVoiceChannel,
-} from '@discordjs/voice'
-import ytdl from 'ytdl-core-discord'
+import { joinVoiceChannel } from '@discordjs/voice'
+import { Queue } from '../structures/Queue'
+import { Song } from '../structures/Song'
+import { searchVideoByTitle } from '../lib/youtube'
 
 export class PlayCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -38,7 +36,8 @@ export class PlayCommand extends Command {
     }
 
     public async chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member) return
+        if (!interaction.guild || !interaction.member || !interaction.channel)
+            return
 
         const member = interaction.guild.members.cache.get(
             interaction.member.user.id
@@ -50,46 +49,52 @@ export class PlayCommand extends Command {
             )
         }
 
-        const title = interaction.options.getString('title')
+        const searchTitle = interaction.options.getString('title')
 
-        if (!title) {
+        if (!searchTitle) {
             return interaction.reply(
                 'You need to provide a title for the song.'
             )
         }
 
-        const connection = joinVoiceChannel({
+        await interaction.reply(`Searching for \`${searchTitle}\`.`)
+
+        joinVoiceChannel({
             channelId: member.voice.channel.id,
             guildId: interaction.guild.id,
             adapterCreator: member.voice.channel.guild.voiceAdapterCreator,
-            selfDeaf: false,
         })
 
-        console.log({
-            connection: {
-                guild: interaction.guild.name,
-                channel: member.voice.channel.name,
-                status: connection.state.status,
-            },
-        })
+        let queue = this.container.jukebox.queues.get(interaction.guild.id)
 
-        const player = createAudioPlayer()
+        if (!queue) {
+            queue = new Queue(interaction.guild.id, interaction.channel)
+            this.container.jukebox.queues.set(interaction.guild.id, queue)
+        }
 
         try {
-            const stream = await ytdl(title, {
-                filter: 'audioonly',
-            })
+            const video = await searchVideoByTitle(searchTitle)
 
-            const resource = createAudioResource(stream)
+            if (!video) {
+                return interaction.editReply(
+                    'I could not find any songs with that title.'
+                )
+            }
 
-            connection.subscribe(player)
+            const response = await queue.addSong(
+                new Song(
+                    video.id,
+                    video.title,
+                    interaction.member.user.username
+                )
+            )
 
-            player.play(resource)
-
-            return interaction.reply(`Playing ${title}`)
+            if (response) {
+                return interaction.editReply(response)
+            }
         } catch (error) {
             console.error(error)
-            return interaction.reply(`Could not play ${title}`)
+            return interaction.editReply(`Failed to play ${searchTitle}.`)
         }
     }
 }
