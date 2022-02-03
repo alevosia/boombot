@@ -1,4 +1,5 @@
 import { SapphireClient, container } from '@sapphire/framework'
+import { ActivityTypes } from 'discord.js/typings/enums'
 import { Jukebox } from './Jukebox'
 
 declare module '@sapphire/pieces' {
@@ -11,6 +12,14 @@ export class CypherClient extends SapphireClient {
     public constructor() {
         super({
             intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_VOICE_STATES'],
+            presence: {
+                activities: [
+                    {
+                        name: 'music',
+                        type: ActivityTypes.LISTENING,
+                    },
+                ],
+            },
         })
     }
 

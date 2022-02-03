@@ -32,7 +32,6 @@
         "erlpack": "github:discord/erlpack",
         "ffmpeg-static": "^4.4.1",
         "he": "^1.2.0",
-        "libsodium-wrappers": "^0.7.9",
         "sodium": "^3.0.2",
         "utf-8-validate": "^5.0.8",
         "youtube-search-without-api-key": "^1.0.7",

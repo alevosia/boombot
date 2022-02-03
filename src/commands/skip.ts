@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import type { CommandInteraction } from 'discord.js'
+import { getGuildIds } from '../lib/env'
 
 export class SkipCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -14,21 +15,23 @@ export class SkipCommand extends Command {
     public override registerApplicationCommands(
         registry: ApplicationCommandRegistry
     ) {
-        const guildIds = process.env.GUILD_ID ? [process.env.GUILD_ID] : []
-
         const builder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
 
         registry.registerChatInputCommand(builder, {
-            guildIds,
+            guildIds: getGuildIds(),
             idHints: ['938436872919711744'],
         })
     }
 
     public async chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member) return
+        if (!interaction.guild || !interaction.member)
+            return interaction.reply(
+                'This command must be used in a server channel.'
+            )
 
+        const guild = interaction.guild
         const member = interaction.guild.members.cache.get(
             interaction.member.user.id
         )
@@ -39,7 +42,7 @@ export class SkipCommand extends Command {
             )
         }
 
-        const queue = this.container.jukebox.queues.get(interaction.guild.id)
+        const queue = this.container.jukebox.queues.get(guild.id)
 
         if (!queue) {
             return interaction.reply(
@@ -47,8 +50,6 @@ export class SkipCommand extends Command {
             )
         }
 
-        const response = await queue.skip()
-
-        return interaction.reply(response)
+        queue.skip(interaction)
     }
 }

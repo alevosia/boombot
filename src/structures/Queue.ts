@@ -7,14 +7,15 @@ import {
     VoiceConnectionStatus,
     getVoiceConnection,
 } from '@discordjs/voice'
-import { TextBasedChannel } from 'discord.js'
-import ytdl from 'ytdl-core-discord'
+import { container } from '@sapphire/framework'
+import { CommandInteraction, TextBasedChannel } from 'discord.js'
+import { download } from '../lib/youtube'
 import { Song } from './Song'
 
 export class Queue {
     public guildId: string
     public songs: Song[]
-    public connection: VoiceConnection | null
+    public connection?: VoiceConnection | null
     public player: AudioPlayer
     public guildChannel: TextBasedChannel
     public constructor(guildId: string, guildChannel: TextBasedChannel) {
@@ -26,6 +27,8 @@ export class Queue {
 
         this.setupVoiceConnection()
         this.attachAudioPlayerListeners()
+
+        console.log(`Created new queue for guild ${guildId}.`)
     }
 
     private attachAudioPlayerListeners() {
@@ -52,44 +55,54 @@ export class Queue {
         })
     }
 
-    public setupVoiceConnection() {
-        this.connection = getVoiceConnection(this.guildId) || null
+    private cleanup() {
+        this.clear()
+        this.player.stop(true)
+
+        if (
+            this.connection &&
+            this.connection.state.status !== VoiceConnectionStatus.Destroyed
+        ) {
+            this.connection.destroy()
+        }
+
+        // Delete the guild's queue from the queues map
+        container.jukebox.queues.delete(this.guildId)
+
+        console.log(`Cleaned up queue for guild ${this.guildId}.`)
+    }
+
+    private setupVoiceConnection() {
+        this.connection = getVoiceConnection(this.guildId)
 
         if (this.connection) {
             this.connection.subscribe(this.player)
 
             this.connection.on(VoiceConnectionStatus.Ready, () => {
-                console.log(
-                    `Ready: Voice Connection is ${this.connection?.state.status}`
-                )
+                console.log(`Voice connection is ready.`)
             })
 
             this.connection.on(VoiceConnectionStatus.Disconnected, () => {
-                this.clear()
-                console.log(
-                    `Disconnected: Voice Connection is ${this.connection?.state.status}. Queue has been cleared.`
-                )
-                this.player.stop(true)
-                this.connection = null
+                console.log(`Voice connection is disconnected.`)
+                this.cleanup()
             })
 
             this.connection.on(VoiceConnectionStatus.Destroyed, () => {
-                this.clear()
-                console.log(
-                    `Destroyed: Voice Connection is ${this.connection?.state.status}. Queue has been cleared.`
-                )
-                this.player.stop(true)
-                this.connection = null
+                console.log(`Voice connection is destroyed.`)
+                this.cleanup()
             })
         }
     }
 
     private async play() {
+        // If there are no songs in the queue, stop playing
         if (this.songs.length === 0) {
             this.player.stop(true)
-            return this.guildChannel.send(`No more songs in the queue.`)
+            this.send(`No more songs in the queue.`)
+            return
         }
 
+        // If there is no voice connection, create one
         if (!this.connection) {
             this.setupVoiceConnection()
         }
@@ -97,54 +110,52 @@ export class Queue {
         const currentSong = this.songs[0]
 
         try {
-            const stream = await ytdl(currentSong.url, {
-                filter: 'audioonly',
-                highWaterMark: 1 << 25,
-            })
+            const stream = await download(currentSong.url)
 
             const resource = createAudioResource(stream)
             this.player.play(resource)
 
-            const response = `Now playing \`${currentSong.title}\`.`
-            console.log(response)
-            return this.guildChannel.send(response)
+            this.send(`Now playing \`${currentSong.title}\`.`)
         } catch (error) {
             console.error(error)
 
-            await this.guildChannel.send(
-                `Failed to play \`${currentSong.title}\`.`
-            )
+            await this.send(`Failed to play \`${currentSong.title}\`.`)
 
-            const response = this.skip()
-            console.log(response)
-            return this.guildChannel.send(response)
+            this.skip()
         }
     }
 
-    public addSong(song: Song): string | void {
+    public addSong(song: Song, interaction: CommandInteraction) {
         this.songs.push(song)
 
+        //  If there is only one song in the queue after adding, play it
         if (this.songs.length === 1) {
             this.play()
         } else {
-            const response = `Added \`${song.title}\` to the queue.`
-            console.log(response)
-            return response
+            interaction.editReply(`Added \`${song.title}\` to the queue.`)
         }
     }
 
-    public skip(): string {
+    public async skip(interaction?: CommandInteraction) {
         const skippedSong = this.songs.shift()
 
+        // If there are no more songs in the queue, stop playing
         if (!skippedSong) {
-            return 'There are no songs in the queue.'
+            return interaction?.reply('There are no songs in the queue.')
         }
 
+        const message = `Skipped \`${skippedSong.title}\`.`
+        await (interaction ? interaction.reply(message) : this.send(message))
+
+        // Play the next song in the queue
         this.play()
-        return `Skipped \`${skippedSong.title}\`.`
     }
 
     public clear() {
         this.songs.splice(0, this.songs.length)
+    }
+
+    public send(message: string) {
+        return this.guildChannel.send(message)
     }
 }

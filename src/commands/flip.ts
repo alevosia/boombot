@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import type { CommandInteraction } from 'discord.js'
+import { getGuildIds } from '../lib/env'
 
 export class FlipCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -15,14 +16,12 @@ export class FlipCommand extends Command {
     public override registerApplicationCommands(
         registry: ApplicationCommandRegistry
     ) {
-        const guildIds = process.env.GUILD_ID ? [process.env.GUILD_ID] : []
-
         const builder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
 
         registry.registerChatInputCommand(builder, {
-            guildIds,
+            guildIds: getGuildIds(),
             idHints: ['938330364005482506'],
         })
     }
