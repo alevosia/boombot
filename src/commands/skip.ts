@@ -16,7 +16,6 @@ export class SkipCommand extends Command {
         registry: ApplicationCommandRegistry
     ) {
         const guildIds = getGuildIds()
-        console.log({ Skip: guildIds })
         if (!guildIds || guildIds.length === 0) {
             throw new Error('Environment variable GUILD_IDS is missing.')
         }

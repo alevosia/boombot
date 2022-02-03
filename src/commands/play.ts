@@ -20,7 +20,6 @@ export class PlayCommand extends Command {
         registry: ApplicationCommandRegistry
     ) {
         const guildIds = getGuildIds()
-        console.log({ Play: guildIds })
         if (!guildIds || guildIds.length === 0) {
             throw new Error('Environment variable GUILD_IDS is missing.')
         }
@@ -93,9 +92,20 @@ export class PlayCommand extends Command {
             return interaction.editReply(`Failed to search for ${searchTitle}.`)
         }
 
-        const { id, title, url } = video
+        const { id, title, url, backupUrl, duration_raw, snippet } = video
 
-        const song = new Song(id.videoId, title, url, member.user.username)
+        const song: Song = {
+            id: id.videoId,
+            title,
+            url,
+            backupUrl,
+            duration: duration_raw,
+            thumbnailUrl: snippet.thumbnails.default.url,
+            queuedBy: {
+                name: member.displayName,
+                iconUrl: member.user.displayAvatarURL(),
+            },
+        }
 
         queue.addSong(song, interaction)
     }

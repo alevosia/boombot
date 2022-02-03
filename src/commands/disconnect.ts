@@ -3,13 +3,13 @@ import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import type { CommandInteraction } from 'discord.js'
 import { getVoiceConnection } from '@discordjs/voice'
 import { getGuildIds } from '../lib/env'
+import { getDisconnectedEmbed } from '../lib/embeds'
 
 export class DisconnectCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: 'disconnect',
-            aliases: ['dc'],
             description: 'Disconnects the bot from the voice channel',
         })
     }
@@ -18,7 +18,6 @@ export class DisconnectCommand extends Command {
         registry: ApplicationCommandRegistry
     ) {
         const guildIds = getGuildIds()
-        console.log({ Disconnect: guildIds })
         if (!guildIds || guildIds.length === 0) {
             throw new Error('Environment variable GUILD_IDS is missing.')
         }
@@ -56,6 +55,6 @@ export class DisconnectCommand extends Command {
 
         connection.destroy()
 
-        return interaction.reply(`Disconnected`)
+        return interaction.reply({ embeds: [getDisconnectedEmbed()] })
     }
 }

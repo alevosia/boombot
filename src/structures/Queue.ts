@@ -8,7 +8,12 @@ import {
     getVoiceConnection,
 } from '@discordjs/voice'
 import { container } from '@sapphire/framework'
-import { CommandInteraction, TextBasedChannel } from 'discord.js'
+import { CommandInteraction, MessageEmbed, TextBasedChannel } from 'discord.js'
+import {
+    getAddedToQueueEmbed,
+    getPlayingNowEmbed,
+    getSkippedEmbed,
+} from '../lib/embeds'
 import { download } from '../lib/youtube'
 import { Song } from './Song'
 
@@ -18,6 +23,7 @@ export class Queue {
     public connection?: VoiceConnection | null
     public player: AudioPlayer
     public guildChannel: TextBasedChannel
+
     public constructor(guildId: string, guildChannel: TextBasedChannel) {
         this.guildId = guildId
         this.songs = []
@@ -94,7 +100,7 @@ export class Queue {
         }
     }
 
-    private async play() {
+    private async play(interaction?: CommandInteraction) {
         // If there are no songs in the queue, stop playing
         if (this.songs.length === 0) {
             this.player.stop(true)
@@ -110,12 +116,20 @@ export class Queue {
         const currentSong = this.songs[0]
 
         try {
-            const stream = await download(currentSong.url)
+            const stream = await download(
+                currentSong.title,
+                currentSong.url,
+                currentSong.backupUrl
+            )
 
             const resource = createAudioResource(stream)
             this.player.play(resource)
 
-            this.send(`Now playing \`${currentSong.title}\`.`)
+            const embed = getPlayingNowEmbed(currentSong)
+
+            interaction
+                ? interaction.editReply({ content: null, embeds: [embed] })
+                : this.send(embed)
         } catch (error) {
             console.error(error)
 
@@ -130,9 +144,12 @@ export class Queue {
 
         //  If there is only one song in the queue after adding, play it
         if (this.songs.length === 1) {
-            this.play()
+            this.play(interaction)
         } else {
-            interaction.editReply(`Added \`${song.title}\` to the queue.`)
+            interaction.editReply({
+                content: null,
+                embeds: [getAddedToQueueEmbed(song)],
+            })
         }
     }
 
@@ -144,8 +161,10 @@ export class Queue {
             return interaction?.reply('There are no songs in the queue.')
         }
 
-        const message = `Skipped \`${skippedSong.title}\`.`
-        await (interaction ? interaction.reply(message) : this.send(message))
+        const embed = getSkippedEmbed(skippedSong)
+        await (interaction
+            ? interaction.reply({ embeds: [embed] })
+            : this.send(embed))
 
         // Play the next song in the queue
         this.play()
@@ -155,7 +174,11 @@ export class Queue {
         this.songs.splice(0, this.songs.length)
     }
 
-    public send(message: string) {
+    public send(message: string | MessageEmbed) {
+        if (message instanceof MessageEmbed) {
+            return this.guildChannel.send({ embeds: [message] })
+        }
+
         return this.guildChannel.send(message)
     }
 }
