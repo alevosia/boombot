@@ -19,6 +19,12 @@ export class PlayCommand extends Command {
     public override registerApplicationCommands(
         registry: ApplicationCommandRegistry
     ) {
+        const guildIds = getGuildIds()
+        console.log({ Play: guildIds })
+        if (!guildIds || guildIds.length === 0) {
+            throw new Error('Environment variable GUILD_IDS is missing.')
+        }
+
         const builder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
@@ -30,7 +36,8 @@ export class PlayCommand extends Command {
             )
 
         registry.registerChatInputCommand(builder, {
-            guildIds: getGuildIds(),
+            guildIds,
+            idHints: ['938330365720948777'],
         })
     }
 

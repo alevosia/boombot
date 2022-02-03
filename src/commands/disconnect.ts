@@ -17,12 +17,19 @@ export class DisconnectCommand extends Command {
     public override registerApplicationCommands(
         registry: ApplicationCommandRegistry
     ) {
+        const guildIds = getGuildIds()
+        console.log({ Disconnect: guildIds })
+        if (!guildIds || guildIds.length === 0) {
+            throw new Error('Environment variable GUILD_IDS is missing.')
+        }
+
         const builder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
 
         registry.registerChatInputCommand(builder, {
-            guildIds: getGuildIds(),
+            guildIds,
+            idHints: ['938350603669762068'],
         })
     }
 
