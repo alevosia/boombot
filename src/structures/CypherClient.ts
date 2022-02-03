@@ -15,7 +15,7 @@ export class CypherClient extends SapphireClient {
             presence: {
                 activities: [
                     {
-                        name: 'the camera',
+                        name: 'Here comes the party!',
                         type: ActivityTypes.WATCHING,
                     },
                 ],
