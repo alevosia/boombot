@@ -8,7 +8,7 @@ declare module '@sapphire/pieces' {
     }
 }
 
-export class CypherClient extends SapphireClient {
+export class BoombotClient extends SapphireClient {
     public constructor() {
         super({
             intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_VOICE_STATES'],

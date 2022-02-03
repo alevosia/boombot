@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv'
 import { generateDependencyReport } from '@discordjs/voice'
-import { CypherClient } from './structures/CypherClient'
+import { BoombotClient } from './structures/BoombotClient'
 
 console.log(generateDependencyReport())
 
@@ -14,6 +14,6 @@ if (!BOT_TOKEN) {
     throw new Error('Environment variable BOT_TOKEN is missing.')
 }
 
-const client = new CypherClient()
+const client = new BoombotClient()
 
 client.login(BOT_TOKEN)

@@ -10,8 +10,9 @@ export function getAddedToQueueEmbed(song: Song, position: number) {
             name: 'Added to queue',
         })
         .setThumbnail(song.thumbnailUrl)
-        .setDescription(`Duration: ${song.duration}`)
-        .setFooter({ text: `Position: ${position}` })
+        .setFooter({
+            text: `Duration: ${song.duration} • Position: ${position}`,
+        })
 }
 
 export function getPlayingNowEmbed(song: Song) {
@@ -24,7 +25,7 @@ export function getPlayingNowEmbed(song: Song) {
             iconURL: song.queuedBy.iconUrl,
         })
         .setThumbnail(song.thumbnailUrl)
-        .setDescription(`Duration: ${song.duration}`)
+        .setFooter({ text: `Duration: ${song.duration}` })
 }
 
 export function getSkippedEmbed(song: Song) {

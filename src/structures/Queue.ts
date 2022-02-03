@@ -84,7 +84,7 @@ export class Queue {
         // Delete the guild's queue from the queues map
         container.jukebox.queues.delete(this.guildId)
 
-        console.log(`Cleaned up queue for guild ${this.guildId}.`)
+        console.log(`Cleaned up queue for ${this.guildName} (${this.guildId}).`)
     }
 
     private setupVoiceConnection() {

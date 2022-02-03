@@ -1,5 +1,5 @@
 {
-    "name": "cypher",
+    "name": "boombot",
     "version": "1.0.0",
     "private": true,
     "description": "",
@@ -11,7 +11,7 @@
         "build": "tsc",
         "start": "node build/index.js",
         "prepare": "husky install",
-        "prebuild": "npm run lint",
+        "prebuild": "npm run lint && rm -rf build",
         "check-types": "tsc --noEmit",
         "lint": "eslint src/**/*.ts",
         "format": "eslint src/**/*.ts --fix"
