@@ -4,6 +4,7 @@ import type { CommandInteraction } from 'discord.js'
 import { getVoiceConnection } from '@discordjs/voice'
 import { getGuildIds } from '../lib/env'
 import { getDisconnectedEmbed } from '../lib/embeds'
+import { generateRandomEmoji } from '../lib/emoji'
 
 export class DisconnectCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -35,7 +36,12 @@ export class DisconnectCommand extends Command {
     }
 
     public chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member) return
+        if (!interaction.guild || !interaction.member)
+            return interaction.reply(
+                `This command must be used in a server channel. ${generateRandomEmoji(
+                    'funny'
+                )}`
+            )
 
         const member = interaction.guild.members.cache.get(
             interaction.member.user.id
@@ -43,7 +49,9 @@ export class DisconnectCommand extends Command {
 
         if (!member || !member.voice.channel) {
             return interaction.reply(
-                'You need to be in a voice channel to use this command.'
+                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
+                    'angry'
+                )}`
             )
         }
 
@@ -51,7 +59,9 @@ export class DisconnectCommand extends Command {
 
         if (!connection) {
             return interaction.reply(
-                'I am not connected to a voice channel in this server.'
+                `I am not connected to a voice channel in this server. ${generateRandomEmoji(
+                    'neutral'
+                )}`
             )
         }
 

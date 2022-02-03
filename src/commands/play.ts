@@ -6,6 +6,7 @@ import { Queue } from '../structures/Queue'
 import { Song } from '../structures/Song'
 import { searchVideoByTitle } from '../lib/youtube'
 import { getGuildIds } from '../lib/env'
+import { generateRandomEmoji } from '../lib/emoji'
 
 export class PlayCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -45,7 +46,9 @@ export class PlayCommand extends Command {
     public async chatInputRun(interaction: CommandInteraction) {
         if (!interaction.guild || !interaction.member || !interaction.channel)
             return interaction.reply(
-                'This command must be used in a server channel.'
+                `This command must be used in a server channel. ${generateRandomEmoji(
+                    'funny'
+                )}`
             )
 
         const guild = interaction.guild
@@ -54,13 +57,17 @@ export class PlayCommand extends Command {
 
         if (!member || !member.voice.channel) {
             return interaction.reply(
-                'You need to be in a voice channel to use this command.'
+                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
+                    'angry'
+                )}`
             )
         }
 
         if (!searchTitle) {
             return interaction.reply(
-                'You need to provide a title for the song.'
+                `You need to provide a title for the song. ${generateRandomEmoji(
+                    'neutral'
+                )}`
             )
         }
 
@@ -75,7 +82,7 @@ export class PlayCommand extends Command {
         let queue = this.container.jukebox.queues.get(guild.id)
 
         if (!queue) {
-            queue = new Queue(guild.id, interaction.channel)
+            queue = new Queue(guild.id, guild.name, interaction.channel)
             this.container.jukebox.queues.set(guild.id, queue)
         }
 
@@ -86,12 +93,18 @@ export class PlayCommand extends Command {
 
             if (!video) {
                 return interaction.editReply(
-                    'I could not find any songs with that title.'
+                    `I could not find any songs with that title. ${generateRandomEmoji(
+                        'sad'
+                    )}`
                 )
             }
         } catch (error) {
             console.error(error)
-            return interaction.editReply(`Failed to search for ${searchTitle}.`)
+            return interaction.editReply(
+                `Failed to search for ${searchTitle}. ${generateRandomEmoji(
+                    'sad'
+                )}`
+            )
         }
 
         const { id, title, url, backupUrl, duration_raw, snippet } = video

@@ -14,18 +14,25 @@ import {
     getPlayingNowEmbed,
     getSkippedEmbed,
 } from '../lib/embeds'
+import { generateRandomEmoji } from '../lib/emoji'
 import { download } from '../lib/youtube'
 import { Song } from './Song'
 
 export class Queue {
     public guildId: string
+    public guildName: string
     public songs: Song[]
     public connection?: VoiceConnection | null
     public player: AudioPlayer
     public guildChannel: TextBasedChannel
 
-    public constructor(guildId: string, guildChannel: TextBasedChannel) {
+    public constructor(
+        guildId: string,
+        guildName: string,
+        guildChannel: TextBasedChannel
+    ) {
         this.guildId = guildId
+        this.guildName = guildName
         this.songs = []
         this.connection = null
         this.player = createAudioPlayer()
@@ -34,7 +41,9 @@ export class Queue {
         this.setupVoiceConnection()
         this.attachAudioPlayerListeners()
 
-        console.log(`Created new queue for guild ${guildId}.`)
+        console.log(
+            `Created new queue for ${this.guildName} (${this.guildId}).`
+        )
     }
 
     private attachAudioPlayerListeners() {
@@ -104,7 +113,9 @@ export class Queue {
         // If there are no songs in the queue, stop playing
         if (this.songs.length === 0) {
             this.player.stop(true)
-            this.send(`No more songs in the queue.`)
+            this.send(
+                `No more songs in the queue. ${generateRandomEmoji('sad')}`
+            )
             return
         }
 
@@ -133,7 +144,11 @@ export class Queue {
         } catch (error) {
             console.error(error)
 
-            await this.send(`Failed to play \`${currentSong.title}\`.`)
+            await this.send(
+                `Failed to play \`${currentSong.title}\`. ${generateRandomEmoji(
+                    'sad'
+                )}`
+            )
 
             this.skip()
         }
@@ -158,7 +173,11 @@ export class Queue {
 
         // If there are no more songs in the queue, stop playing
         if (!skippedSong) {
-            return interaction?.reply('There are no songs in the queue.')
+            return interaction?.reply(
+                `There are no songs in the queue. ${generateRandomEmoji(
+                    'neutral'
+                )}`
+            )
         }
 
         const embed = getSkippedEmbed(skippedSong)

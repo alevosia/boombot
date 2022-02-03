@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
 import type { CommandInteraction } from 'discord.js'
+import { generateRandomEmoji } from '../lib/emoji'
 import { getGuildIds } from '../lib/env'
 
 export class SkipCommand extends Command {
@@ -35,7 +36,9 @@ export class SkipCommand extends Command {
     public async chatInputRun(interaction: CommandInteraction) {
         if (!interaction.guild || !interaction.member)
             return interaction.reply(
-                'This command must be used in a server channel.'
+                `This command must be used in a server channel. ${generateRandomEmoji(
+                    'funny'
+                )}`
             )
 
         const guild = interaction.guild
@@ -45,7 +48,9 @@ export class SkipCommand extends Command {
 
         if (!member || !member.voice.channel) {
             return interaction.reply(
-                'You need to be in a voice channel to use this command.'
+                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
+                    'angry'
+                )}`
             )
         }
 
@@ -53,7 +58,9 @@ export class SkipCommand extends Command {
 
         if (!queue) {
             return interaction.reply(
-                'There is no music playing in this server.'
+                `There is no music playing in this server. ${generateRandomEmoji(
+                    'neutral'
+                )}`
             )
         }
 
