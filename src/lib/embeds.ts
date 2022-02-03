@@ -1,7 +1,7 @@
 import { MessageEmbed } from 'discord.js'
 import { Song } from '../structures/Song'
 
-export function getAddedToQueueEmbed(song: Song) {
+export function getAddedToQueueEmbed(song: Song, position: number) {
     return new MessageEmbed()
         .setColor('#32cd32') // lime
         .setTitle(song.title)
@@ -11,6 +11,7 @@ export function getAddedToQueueEmbed(song: Song) {
         })
         .setThumbnail(song.thumbnailUrl)
         .setDescription(`Duration: ${song.duration}`)
+        .setFooter({ text: `Position: ${position}` })
 }
 
 export function getPlayingNowEmbed(song: Song) {

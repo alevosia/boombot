@@ -148,7 +148,7 @@ export class Queue {
         } else {
             interaction.editReply({
                 content: null,
-                embeds: [getAddedToQueueEmbed(song)],
+                embeds: [getAddedToQueueEmbed(song, this.songs.length)],
             })
         }
     }
