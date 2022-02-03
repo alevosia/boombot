@@ -17,19 +17,21 @@ export class DisconnectCommand extends Command {
     public override registerApplicationCommands(
         registry: ApplicationCommandRegistry
     ) {
-        const guildIds = getGuildIds()
-        if (!guildIds || guildIds.length === 0) {
-            throw new Error('Environment variable GUILD_IDS is missing.')
+        let guildIds
+
+        if (process.env.NODE_ENV !== 'production') {
+            guildIds = getGuildIds()
+
+            if (!guildIds || guildIds.length === 0) {
+                throw new Error('Environment variable GUILD_IDS is missing.')
+            }
         }
 
         const builder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
 
-        registry.registerChatInputCommand(builder, {
-            guildIds,
-            idHints: ['938350603669762068'],
-        })
+        registry.registerChatInputCommand(builder, { guildIds })
     }
 
     public chatInputRun(interaction: CommandInteraction) {
