@@ -99,6 +99,7 @@ export class Queue {
         try {
             const stream = await ytdl(currentSong.url, {
                 filter: 'audioonly',
+                highWaterMark: 1 << 25,
             })
 
             const resource = createAudioResource(stream)
