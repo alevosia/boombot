@@ -41,33 +41,84 @@ export class Queue {
         this.setupVoiceConnection()
         this.attachAudioPlayerListeners()
 
-        console.log(
-            `Created new queue for ${this.guildName} (${this.guildId}).`
-        )
+        console.log(`${this.guildName}: Created a new queue.`)
     }
 
     private attachAudioPlayerListeners() {
-        this.player.on(AudioPlayerStatus.Idle, (oldState, newState) => {
+        this.player.on(AudioPlayerStatus.Idle, () => {
             console.log(
-                `Audio Player is ${newState.status}. Previous state was ${oldState.status}.`
+                `${this.guildName}: Audio Player is idle. Playing next song.`
             )
 
-            if (this.songs.length > 0) {
-                console.log(
-                    'There is still a song left in queue. Shifting and playing next song.'
-                )
-                this.songs.shift()
-                this.play()
-            }
+            // Play the next song whenever the player is idle
+            this.songs.shift()
+            this.play()
+        })
+
+        this.player.on(AudioPlayerStatus.Buffering, () => {
+            console.log(
+                `${this.guildName}: Audio player is buffering "${this.songs[0]?.title}".`
+            )
+        })
+
+        this.player.on(AudioPlayerStatus.Playing, () => {
+            console.log(
+                `${this.guildName}: Audio player is playing "${this.songs[0]?.title}".`
+            )
         })
 
         this.player.on(AudioPlayerStatus.Paused, () => {
-            console.log(`Paused ${this.songs[0]?.title}`)
+            console.log(
+                `${this.guildName}: Audio player paused "${this.songs[0]?.title}".`
+            )
         })
 
         this.player.on(AudioPlayerStatus.AutoPaused, () => {
-            console.log('There are no active voice connections to play to.')
+            console.log(
+                `${this.guildName}: Player is autopaused. No active voice connections.`
+            )
         })
+
+        this.player.on('error', (error) => {
+            console.log(`${this.guildName}: Audio player error: ${error}`)
+        })
+    }
+
+    private setupVoiceConnection() {
+        console.log(`${this.guildName}: Setting up voice connection.`)
+        this.connection = getVoiceConnection(this.guildId)
+
+        if (this.connection) {
+            this.connection.subscribe(this.player)
+
+            this.connection.on(VoiceConnectionStatus.Signalling, () => {
+                console.log(
+                    `${this.guildName}: Voice connection is signalling.`
+                )
+            })
+
+            this.connection.on(VoiceConnectionStatus.Connecting, () => {
+                console.log(
+                    `${this.guildName}: Voice connection is connecting.`
+                )
+            })
+
+            this.connection.on(VoiceConnectionStatus.Ready, () => {
+                console.log(`${this.guildName}: Voice connection is ready.`)
+            })
+
+            this.connection.on(VoiceConnectionStatus.Disconnected, () => {
+                console.log(
+                    `${this.guildName}: Voice connection is disconnected.`
+                )
+                this.cleanup()
+            })
+
+            this.connection.on(VoiceConnectionStatus.Destroyed, () => {
+                console.log(`${this.guildName}: Voice connection is destroyed.`)
+                this.cleanup()
+            })
+        }
     }
 
     private cleanup() {
@@ -82,41 +133,22 @@ export class Queue {
         }
 
         // Delete the guild's queue from the queues map
-        container.jukebox.queues.delete(this.guildId)
+        const isDeleted = container.jukebox.queues.delete(this.guildId)
 
-        console.log(`Cleaned up queue for ${this.guildName} (${this.guildId}).`)
-    }
-
-    private setupVoiceConnection() {
-        this.connection = getVoiceConnection(this.guildId)
-
-        if (this.connection) {
-            this.connection.subscribe(this.player)
-
-            this.connection.on(VoiceConnectionStatus.Ready, () => {
-                console.log(`Voice connection is ready.`)
-            })
-
-            this.connection.on(VoiceConnectionStatus.Disconnected, () => {
-                console.log(`Voice connection is disconnected.`)
-                this.cleanup()
-            })
-
-            this.connection.on(VoiceConnectionStatus.Destroyed, () => {
-                console.log(`Voice connection is destroyed.`)
-                this.cleanup()
-            })
-        }
+        console.log(
+            `${this.guildName}: ${
+                isDeleted ? 'Cleaned up' : 'Failed to clean up'
+            } queue.`
+        )
     }
 
     private async play(interaction?: CommandInteraction) {
         // If there are no songs in the queue, stop playing
         if (this.songs.length === 0) {
-            this.player.stop(true)
-            this.send(
+            console.log(`${this.guildName}: No more songs in the queue.`)
+            return this.send(
                 `No more songs in the queue. ${generateRandomEmoji('sad')}`
             )
-            return
         }
 
         // If there is no voice connection, create one
@@ -127,18 +159,47 @@ export class Queue {
         const currentSong = this.songs[0]
 
         try {
-            const stream = await download(
-                currentSong.title,
-                currentSong.url,
-                currentSong.backupUrl
-            )
+            const stream = await download(currentSong)
+
+            stream.on('pause', () => {
+                console.log(
+                    `${this.guildName}: Stream paused for ${currentSong.title}.`
+                )
+            })
+
+            stream.on('resume', () => {
+                console.log(
+                    `${this.guildName}: Stream resumed for ${currentSong.title}.`
+                )
+            })
+
+            stream.on('end', () => {
+                console.log(
+                    `${this.guildName}: Stream ended for ${currentSong.title}.`
+                )
+            })
+
+            stream.on('close', () => {
+                console.log(
+                    `${this.guildName}: Stream closed for ${currentSong.title}.`
+                )
+            })
+
+            stream.on('error', (error) => {
+                console.error(
+                    `${this.guildName}: Stream errored for ${currentSong.title}: ${error}`
+                )
+            })
 
             const resource = createAudioResource(stream)
             this.player.play(resource)
 
-            const embed = getPlayingNowEmbed(currentSong)
+            console.log(
+                `${this.guildName}: Now playing "${currentSong.title}".`
+            )
 
-            interaction
+            const embed = getPlayingNowEmbed(currentSong)
+            return interaction
                 ? interaction.editReply({ content: null, embeds: [embed] })
                 : this.send(embed)
         } catch (error) {
@@ -150,12 +211,14 @@ export class Queue {
                 )}`
             )
 
-            this.skip()
+            return this.skip()
         }
     }
 
     public addSong(song: Song, interaction: CommandInteraction) {
         this.songs.push(song)
+
+        console.log(`${this.guildName}: Added "${song.title}" to the queue.`)
 
         //  If there is only one song in the queue after adding, play it
         if (this.songs.length === 1) {
@@ -180,6 +243,8 @@ export class Queue {
             )
         }
 
+        console.log(`${this.guildName}: Skipped "${skippedSong.title}".`)
+
         const embed = getSkippedEmbed(skippedSong)
         await (interaction
             ? interaction.reply({ embeds: [embed] })
@@ -191,6 +256,7 @@ export class Queue {
 
     public clear() {
         this.songs.splice(0, this.songs.length)
+        console.log(`${this.guildName}: Cleared the queue.`)
     }
 
     public send(message: string | MessageEmbed) {
