@@ -1,8 +1,9 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
-import type { CommandInteraction } from 'discord.js'
-import { generateRandomEmoji } from '../lib/emoji'
+import { CommandInteraction, GuildMember } from 'discord.js'
+import { getSkippedEmbed } from '../lib/embeds'
 import { getGuildIds } from '../lib/env'
+import { RESPONSES } from '../lib/responses'
 
 export class SkipCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -33,37 +34,34 @@ export class SkipCommand extends Command {
         registry.registerChatInputCommand(builder, { guildIds })
     }
 
-    public async chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member)
-            return interaction.reply(
-                `This command must be used in a server channel. ${generateRandomEmoji(
-                    'funny'
-                )}`
-            )
-
-        const guild = interaction.guild
-        const member = interaction.guild.members.cache.get(
-            interaction.member.user.id
-        )
-
-        if (!member || !member.voice.channel) {
-            return interaction.reply(
-                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
-                    'angry'
-                )}`
-            )
+    public chatInputRun(interaction: CommandInteraction) {
+        if (
+            !interaction.guild ||
+            !(interaction.member instanceof GuildMember)
+        ) {
+            return interaction.reply(RESPONSES.SERVER_ONLY)
         }
 
-        const queue = this.container.jukebox.queues.get(guild.id)
+        if (!interaction.member.voice.channelId) {
+            return interaction.reply(RESPONSES.NOT_IN_VOICE_CHANNEL)
+        }
+
+        if (
+            interaction.guild.me?.voice.channelId &&
+            interaction.member.voice.channelId !==
+                interaction.guild.me?.voice.channelId
+        ) {
+            return interaction.reply(RESPONSES.NOT_SAME_VOICE_CHANNEL)
+        }
+
+        const queue = this.container.jukebox.getQueue(interaction.guild)
 
         if (!queue) {
-            return interaction.reply(
-                `There is no music playing in this server. ${generateRandomEmoji(
-                    'neutral'
-                )}`
-            )
+            return interaction.reply(RESPONSES.NO_MUSIC)
         }
 
-        queue.skip(interaction)
+        const currentTrack = queue.current
+        queue.skip()
+        return interaction.reply({ embeds: [getSkippedEmbed(currentTrack)] })
     }
 }

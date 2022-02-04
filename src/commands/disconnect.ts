@@ -1,10 +1,9 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
-import type { CommandInteraction } from 'discord.js'
-import { getVoiceConnection } from '@discordjs/voice'
+import { CommandInteraction, GuildMember } from 'discord.js'
 import { getGuildIds } from '../lib/env'
 import { getDisconnectedEmbed } from '../lib/embeds'
-import { generateRandomEmoji } from '../lib/emoji'
+import { RESPONSES } from '../lib/responses'
 
 export class DisconnectCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -36,36 +35,28 @@ export class DisconnectCommand extends Command {
     }
 
     public chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member)
-            return interaction.reply(
-                `This command must be used in a server channel. ${generateRandomEmoji(
-                    'funny'
-                )}`
-            )
-
-        const member = interaction.guild.members.cache.get(
-            interaction.member.user.id
-        )
-
-        if (!member || !member.voice.channel) {
-            return interaction.reply(
-                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
-                    'angry'
-                )}`
-            )
+        if (
+            !interaction.guild ||
+            !(interaction.member instanceof GuildMember)
+        ) {
+            return interaction.reply(RESPONSES.SERVER_ONLY)
         }
 
-        const connection = getVoiceConnection(interaction.guild.id)
-
-        if (!connection) {
-            return interaction.reply(
-                `I am not connected to a voice channel in this server. ${generateRandomEmoji(
-                    'neutral'
-                )}`
-            )
+        if (!interaction.member.voice.channelId) {
+            return interaction.reply(RESPONSES.NOT_IN_VOICE_CHANNEL)
         }
 
-        connection.destroy()
+        if (
+            interaction.guild.me?.voice.channelId &&
+            interaction.member.voice.channelId !==
+                interaction.guild.me?.voice.channelId
+        ) {
+            return interaction.reply(RESPONSES.NOT_SAME_VOICE_CHANNEL)
+        }
+
+        const queue = this.container.jukebox.getQueue(interaction.guild)
+
+        queue.destroy(true)
 
         return interaction.reply({ embeds: [getDisconnectedEmbed()] })
     }

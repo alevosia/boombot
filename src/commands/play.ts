@@ -1,12 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { ApplicationCommandRegistry, Command } from '@sapphire/framework'
-import { CommandInteraction } from 'discord.js'
-import { joinVoiceChannel } from '@discordjs/voice'
-import { Queue } from '../structures/Queue'
-import { Song } from '../structures/Song'
-import { searchVideoByTitle } from '../lib/youtube'
-import { getGuildIds } from '../lib/env'
+import { CommandInteraction, GuildMember } from 'discord.js'
+import { getAddedToQueueEmbed } from '../lib/embeds'
 import { generateRandomEmoji } from '../lib/emoji'
+import { getGuildIds } from '../lib/env'
+import { RESPONSES } from '../lib/responses'
 
 export class PlayCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -44,84 +42,87 @@ export class PlayCommand extends Command {
     }
 
     public async chatInputRun(interaction: CommandInteraction) {
-        if (!interaction.guild || !interaction.member || !interaction.channel)
-            return interaction.reply(
-                `This command must be used in a server channel. ${generateRandomEmoji(
-                    'funny'
-                )}`
-            )
+        await interaction.deferReply()
 
-        const guild = interaction.guild
-        const member = guild.members.cache.get(interaction.member.user.id)
+        if (
+            !interaction.guild ||
+            !(interaction.member instanceof GuildMember)
+        ) {
+            return interaction.followUp(RESPONSES.SERVER_ONLY)
+        }
+
+        if (!interaction.member.voice.channelId) {
+            return interaction.followUp(RESPONSES.NOT_IN_VOICE_CHANNEL)
+        }
+
+        if (
+            interaction.guild.me?.voice.channelId &&
+            interaction.member.voice.channelId !==
+                interaction.guild.me?.voice.channelId
+        ) {
+            return interaction.followUp(RESPONSES.NOT_SAME_VOICE_CHANNEL)
+        }
+
         const searchTitle = interaction.options.getString('title')
 
-        if (!member || !member.voice.channel) {
-            return interaction.reply(
-                `You need to be in a voice channel to use this command. ${generateRandomEmoji(
-                    'angry'
-                )}`
-            )
-        }
-
         if (!searchTitle) {
-            return interaction.reply(
-                `You need to provide a title for the song. ${generateRandomEmoji(
-                    'neutral'
-                )}`
-            )
+            return interaction.followUp(RESPONSES.MISSING_TITLE)
         }
 
-        await interaction.reply(`Searching for \`${searchTitle}\`...`)
-
-        joinVoiceChannel({
-            channelId: member.voice.channel.id,
-            guildId: guild.id,
-            adapterCreator: member.voice.channel.guild.voiceAdapterCreator,
+        const queue = this.container.jukebox.createQueue(interaction.guild, {
+            leaveOnEnd: false,
+            leaveOnEmptyCooldown: 1000, // 5 minutes
+            initialVolume: 40,
+            metadata: {
+                channel: interaction.channel,
+            },
         })
 
-        let queue = this.container.jukebox.queues.get(guild.id)
-
-        if (!queue) {
-            queue = new Queue(guild.id, guild.name, interaction.channel)
-            this.container.jukebox.queues.set(guild.id, queue)
+        try {
+            if (!queue.connection) {
+                await queue.connect(interaction.member.voice.channelId)
+            }
+        } catch {
+            queue.destroy()
+            return interaction.followUp(RESPONSES.FAILED_JOIN)
         }
 
-        let video
+        await interaction.followUp(`Searching for \`${searchTitle}\`...`)
 
-        try {
-            video = await searchVideoByTitle(searchTitle)
+        const result = await this.container.jukebox.search(searchTitle, {
+            requestedBy: interaction.user,
+        })
 
-            if (!video) {
-                return interaction.editReply(
-                    `I could not find any songs with that title. ${generateRandomEmoji(
-                        'sad'
-                    )}`
-                )
-            }
-        } catch (error) {
-            console.error(error)
-            return interaction.editReply(
-                `Failed to search for ${searchTitle}. ${generateRandomEmoji(
+        const track = result.tracks[0]
+
+        if (!track) {
+            return interaction.followUp(
+                `I couldn't find any tracks for \`${searchTitle}\`, sorry. ${generateRandomEmoji(
                     'sad'
                 )}`
             )
         }
 
-        const { id, title, url, backupUrl, duration_raw, snippet } = video
+        try {
+            await queue.play(track)
 
-        const song: Song = {
-            id: id.videoId,
-            title,
-            url,
-            backupUrl,
-            duration: duration_raw,
-            thumbnailUrl: snippet.thumbnails.default.url,
-            queuedBy: {
-                name: member.displayName,
-                iconUrl: member.user.displayAvatarURL(),
-            },
+            if (queue.tracks.length === 0) {
+                return interaction.deleteReply()
+            } else {
+                return interaction.editReply({
+                    content: null,
+                    embeds: [
+                        getAddedToQueueEmbed(track, queue.tracks.length + 1),
+                    ],
+                })
+            }
+        } catch (error) {
+            this.container.logger.error(error)
+            return interaction.editReply(
+                `Failed to play \`${
+                    track.title
+                }\`, sorry. ${generateRandomEmoji('sad')}`
+            )
         }
-
-        queue.addSong(song, interaction)
     }
 }

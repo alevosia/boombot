@@ -1,18 +1,16 @@
-type Energy = 'happy' | 'sad' | 'angry' | 'neutral' | 'funny'
+type Vibe = 'happy' | 'sad' | 'disappointed' | 'funny'
 
-export function generateRandomEmoji(energy: Energy) {
+export function generateRandomEmoji(vibe: Vibe) {
     const number = Math.random()
 
-    switch (energy) {
+    switch (vibe) {
         case 'happy':
             return number < 0.33 ? '😄' : number < 0.67 ? '😃' : '😊'
         case 'sad':
             return number < 0.33 ? '😢' : number < 0.67 ? '😭' : '😟'
-        case 'angry':
-            return number < 0.33 ? '🙃' : number < 0.67 ? '😠' : '😤'
-        case 'neutral':
-            return number < 0.33 ? '🥴' : number < 0.67 ? '😏' : '😐'
+        case 'disappointed':
+            return number < 0.33 ? '😤' : number < 0.67 ? '🙃' : '😐'
         case 'funny':
-            return number < 0.33 ? '😂' : number < 0.67 ? '😃' : '🤣'
+            return number < 0.33 ? '😂' : number < 0.67 ? '😆' : '🤣'
     }
 }

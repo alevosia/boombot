@@ -1,40 +1,40 @@
+import { Track } from 'discord-player'
 import { MessageEmbed } from 'discord.js'
-import { Song } from '../structures/Song'
 
-export function getAddedToQueueEmbed(song: Song, position: number) {
+export function getAddedToQueueEmbed(track: Track, position: number) {
     return new MessageEmbed()
         .setColor('#32cd32') // lime
-        .setTitle(song.title)
-        .setURL(song.url)
+        .setTitle(track.title)
+        .setURL(track.url)
         .setAuthor({
             name: 'Added to queue',
         })
-        .setThumbnail(song.thumbnailUrl)
+        .setThumbnail(track.thumbnail)
         .setFooter({
-            text: `Duration: ${song.duration} • Position: ${position}`,
+            text: `Duration: ${track.duration} • Position: ${position}`,
         })
 }
 
-export function getPlayingNowEmbed(song: Song) {
+export function getPlayingNowEmbed(track: Track) {
     return new MessageEmbed()
         .setColor('#5acbd6') // aqua
-        .setTitle(song.title)
-        .setURL(song.url)
+        .setTitle(track.title)
+        .setURL(track.url)
         .setAuthor({
             name: 'Now playing',
-            iconURL: song.queuedBy.iconUrl,
+            iconURL: track.requestedBy.displayAvatarURL(),
         })
-        .setThumbnail(song.thumbnailUrl)
-        .setFooter({ text: `Duration: ${song.duration}` })
+        .setThumbnail(track.thumbnail)
+        .setFooter({ text: `Duration: ${track.duration}` })
 }
 
-export function getSkippedEmbed(song: Song) {
+export function getSkippedEmbed(track: Track) {
     return new MessageEmbed()
         .setColor('#d24747') // crimson
         .setAuthor({
             name: 'Skipped',
         })
-        .setDescription(song.title)
+        .setDescription(track.title)
 }
 
 export function getDisconnectedEmbed() {
