@@ -63,7 +63,7 @@ export class BoombotClient extends SapphireClient {
         })
     }
 
-    public override async login(token?: string) {
+    private setupJukebox() {
         container.jukebox = new Player(this)
 
         container.jukebox.on('trackStart', async (queue, track) => {
@@ -106,8 +106,20 @@ export class BoombotClient extends SapphireClient {
         })
 
         container.jukebox.on('error', (queue, error) => {
-            this.logger.error(`${queue.guild.name}: ${error}`)
+            this.logger.error(
+                `${queue.guild.name}: Error.\n${error.name}: ${error.message}\n${error.stack}`
+            )
         })
+
+        container.jukebox.on('connectionError', (queue, error) => {
+            this.logger.error(
+                `${queue.guild.name}: Connection Error.\n${error.name}: ${error.message}\n${error.stack}`
+            )
+        })
+    }
+
+    public override async login(token?: string) {
+        this.setupJukebox()
 
         return super.login(token)
     }
