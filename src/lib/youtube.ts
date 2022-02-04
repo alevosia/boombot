@@ -1,5 +1,7 @@
 import * as yt from 'youtube-search-without-api-key'
-import ytdl from 'ytdl-core-discord'
+import ytdlCore from 'ytdl-core'
+import ytdlDiscord from 'ytdl-core-discord'
+import { Song } from '../structures/Song'
 
 export async function searchVideoByTitle(title: string) {
     const results = await yt.search(title)
@@ -7,24 +9,19 @@ export async function searchVideoByTitle(title: string) {
     return { ...results[0], backupUrl: results[1]?.url }
 }
 
-export async function download(title: string, url: string, backupUrl: string) {
-    try {
-        const stream = await ytdl(url, {
-            filter: 'audioonly',
-            highWaterMark: 1 << 25,
-        })
+const ytdlOptions: ytdlCore.downloadOptions = {
+    filter: 'audioonly',
+    highWaterMark: 1 << 21,
+}
 
-        return stream
+export async function download({ title, url, backupUrl }: Song) {
+    try {
+        return await ytdlDiscord(url, ytdlOptions)
     } catch (error) {
         console.error(
             `Failed to play ${title}'s URL: ${url}. Trying backup: ${backupUrl}.`
         )
 
-        const stream = await ytdl(backupUrl, {
-            filter: 'audioonly',
-            highWaterMark: 1 << 25,
-        })
-
-        return stream
+        return await ytdlDiscord(backupUrl, ytdlOptions)
     }
 }
