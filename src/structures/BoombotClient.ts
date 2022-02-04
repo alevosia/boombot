@@ -107,13 +107,21 @@ export class BoombotClient extends SapphireClient {
 
         container.jukebox.on('error', (queue, error) => {
             this.logger.error(
-                `${queue.guild.name}: Error.\n${error.name}: ${error.message}\n${error.stack}`
+                `${queue.guild.name}: Player Error.\n${error.name}: ${error.message}`
             )
+
+            if (overrideIsSomething(queue.metadata) && queue.metadata.channel) {
+                queue.metadata.channel.send(
+                    `I can't play \`${
+                        queue.current.title
+                    }\`, sorry. ${generateRandomEmoji('sad')}`
+                )
+            }
         })
 
         container.jukebox.on('connectionError', (queue, error) => {
             this.logger.error(
-                `${queue.guild.name}: Connection Error.\n${error.name}: ${error.message}\n${error.stack}`
+                `${queue.guild.name}: Player Connection Error.\n${error.name}: ${error.message}`
             )
         })
     }
