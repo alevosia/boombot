@@ -71,19 +71,20 @@ export class PlayCommand extends Command {
 
         const queue = this.container.jukebox.createQueue(interaction.guild, {
             leaveOnEnd: false,
-            leaveOnEmptyCooldown: 1000, // 5 minutes
-            initialVolume: 40,
+            initialVolume: 30,
             metadata: {
                 channel: interaction.channel,
             },
         })
 
         try {
-            if (!queue.connection) {
+            if (!queue.connection && !queue.destroyed) {
                 await queue.connect(interaction.member.voice.channelId)
             }
         } catch {
-            queue.destroy()
+            if (!queue.destroyed) {
+                queue.destroy()
+            }
             return interaction.followUp(RESPONSES.FAILED_JOIN)
         }
 

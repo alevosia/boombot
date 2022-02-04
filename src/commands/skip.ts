@@ -46,22 +46,31 @@ export class SkipCommand extends Command {
             return interaction.reply(RESPONSES.NOT_IN_VOICE_CHANNEL)
         }
 
+        if (!interaction.guild.me?.voice.channelId) {
+            return interaction.reply(RESPONSES.BOT_NOT_IN_VOICE_CHANNEL)
+        }
+
         if (
-            interaction.guild.me?.voice.channelId &&
             interaction.member.voice.channelId !==
-                interaction.guild.me?.voice.channelId
+            interaction.guild.me.voice.channelId
         ) {
             return interaction.reply(RESPONSES.NOT_SAME_VOICE_CHANNEL)
         }
 
-        const queue = this.container.jukebox.getQueue(interaction.guild)
+        const queue = this.container.jukebox.queues.get(interaction.guild.id)
 
         if (!queue) {
             return interaction.reply(RESPONSES.NO_MUSIC)
         }
 
         const currentTrack = queue.current
+
+        if (!currentTrack) {
+            return interaction.reply(RESPONSES.NO_SONGS_IN_QUEUE)
+        }
+
         queue.skip()
+
         return interaction.reply({ embeds: [getSkippedEmbed(currentTrack)] })
     }
 }

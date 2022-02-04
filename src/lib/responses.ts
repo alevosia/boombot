@@ -6,10 +6,12 @@ type ResponseKey =
     | 'FAILED_JOIN'
     | 'MISSING_TITLE'
     | 'NO_MUSIC'
+    | 'NO_SONGS_IN_QUEUE'
     | 'NOT_IN_VOICE_CHANNEL'
     | 'NOT_SAME_VOICE_CHANNEL'
     | 'SERVER_ONLY'
 
+// The emojies are generated only once at the moment
 export const RESPONSES: Record<ResponseKey, string | InteractionReplyOptions> =
     {
         BOT_NOT_IN_VOICE_CHANNEL: {
@@ -34,7 +36,12 @@ export const RESPONSES: Record<ResponseKey, string | InteractionReplyOptions> =
             )}`,
             // ephemeral: true,
         },
-
+        NO_SONGS_IN_QUEUE: {
+            content: `It's already empty. ${generateRandomEmoji(
+                'disappointed'
+            )}`,
+            // ephemeral: true,
+        },
         NOT_IN_VOICE_CHANNEL: {
             content: `Get in a voice channel and I might consider. ${generateRandomEmoji(
                 'disappointed'
@@ -48,7 +55,7 @@ export const RESPONSES: Record<ResponseKey, string | InteractionReplyOptions> =
             // ephemeral: true,
         },
         SERVER_ONLY: {
-            content: `Surely you're not asking me to do that here, silly?. ${generateRandomEmoji(
+            content: `Surely you're not asking me to do that here, silly? ${generateRandomEmoji(
                 'funny'
             )}`,
             // ephemeral: true,

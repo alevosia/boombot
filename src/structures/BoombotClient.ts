@@ -3,6 +3,7 @@ import { Player } from 'discord-player'
 import { Message, TextChannel } from 'discord.js'
 import { ActivityTypes } from 'discord.js/typings/enums'
 import { getPlayingNowEmbed } from '../lib/embeds'
+import { generateRandomEmoji } from '../lib/emoji'
 
 declare module '@sapphire/pieces' {
     interface Container {
@@ -13,6 +14,7 @@ declare module '@sapphire/pieces' {
 interface QueueMetadata {
     channel: TextChannel
     nowPlaying?: Message
+    noMoreSongs: Message
 }
 
 function overrideIsSomething(override: unknown): override is QueueMetadata {
@@ -34,7 +36,16 @@ function overrideIsSomething(override: unknown): override is QueueMetadata {
         ? override.nowPlaying instanceof Message
         : true
 
-    return somethingLike && isChannelTextChannel && isNowPlayingMessage
+    const noMoreSongs = override.noMoreSongs
+        ? override.noMoreSongs instanceof Message
+        : true
+
+    return (
+        somethingLike &&
+        isChannelTextChannel &&
+        isNowPlayingMessage &&
+        noMoreSongs
+    )
 }
 
 export class BoombotClient extends SapphireClient {
@@ -56,7 +67,13 @@ export class BoombotClient extends SapphireClient {
         container.jukebox = new Player(this)
 
         container.jukebox.on('trackStart', async (queue, track) => {
-            if (overrideIsSomething(queue.metadata) && queue.metadata.channel) {
+            if (!overrideIsSomething(queue.metadata)) return
+
+            if (queue.metadata.noMoreSongs) {
+                queue.metadata.noMoreSongs.delete()
+            }
+
+            if (queue.metadata.channel) {
                 const message = await queue.metadata.channel.send({
                     embeds: [getPlayingNowEmbed(track)],
                 })
@@ -65,12 +82,17 @@ export class BoombotClient extends SapphireClient {
             }
         })
 
-        container.jukebox.on('trackEnd', (queue) => {
-            if (
-                overrideIsSomething(queue.metadata) &&
-                queue.metadata.nowPlaying
-            ) {
+        container.jukebox.on('trackEnd', async (queue) => {
+            if (!overrideIsSomething(queue.metadata)) return
+
+            if (queue.metadata.nowPlaying) {
                 queue.metadata.nowPlaying.delete()
+            }
+
+            if (queue.tracks.length === 0 && queue.metadata.channel) {
+                queue.metadata.noMoreSongs = await queue.metadata.channel.send(
+                    `No more songs in queue. ${generateRandomEmoji('sad')}`
+                )
             }
         })
 
