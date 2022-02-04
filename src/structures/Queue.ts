@@ -187,7 +187,9 @@ export class Queue {
 
             stream.on('error', (error) => {
                 console.error(
-                    `${this.guildName}: Stream errored for ${currentSong.title}: ${error}`
+                    `${this.guildName}: Stream errored for ${currentSong.title}`,
+                    `${error.name}: ${error.message}`,
+                    error.stack
                 )
             })
 
