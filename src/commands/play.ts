@@ -70,8 +70,12 @@ export class PlayCommand extends Command {
         }
 
         const queue = this.container.jukebox.createQueue(interaction.guild, {
-            leaveOnEnd: false,
-            initialVolume: 30,
+            disableVolume: true,
+            ytdlOptions: {
+                filter: 'audioonly',
+                highWaterMark: 1 << 30,
+                dlChunkSize: 0,
+            },
             metadata: {
                 channel: interaction.channel,
             },
