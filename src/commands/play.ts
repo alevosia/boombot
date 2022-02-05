@@ -73,7 +73,7 @@ export class PlayCommand extends Command {
             disableVolume: true,
             ytdlOptions: {
                 filter: 'audioonly',
-                highWaterMark: 1 << 30,
+                highWaterMark: 1 << 25,
                 dlChunkSize: 0,
             },
             metadata: {
