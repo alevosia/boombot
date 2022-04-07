@@ -111,9 +111,7 @@ export class PlayCommand extends Command {
         try {
             await queue.play(track)
 
-            if (queue.tracks.length === 0) {
-                return interaction.deleteReply()
-            } else {
+            if (queue.tracks.length > 0) {
                 return interaction.editReply({
                     content: null,
                     embeds: [
@@ -121,6 +119,8 @@ export class PlayCommand extends Command {
                     ],
                 })
             }
+
+            return
         } catch (error) {
             this.container.logger.error(error)
             return interaction.editReply(
