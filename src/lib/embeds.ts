@@ -9,7 +9,6 @@ export function getAddedToQueueEmbed(track: Track, position: number) {
         .setAuthor({
             name: 'Added to queue',
         })
-        .setThumbnail(track.thumbnail)
         .setFooter({
             text: `Duration: ${track.duration} • Position: ${position}`,
         })
